@@ -2,10 +2,11 @@
  * Specchio degli Auguri — Specchio Magico per Compleanni
  * Stile Efteling / Anton Piek  ·  v1.0-it
  * Versione italiana del Magische Spiegel
+ * v1.1-it: pulsante playlist anni 50, saluto speciale nonna 94 anni
  <!--
 ================================================================================
   Specchio degli Auguri — Specchio Magico per Compleanni
-  Versione 1.0-it — 2025
+  Versione 1.1-it — 2025
 ================================================================================
   Copyright (c) 2025 Jan den Hollander
   Tutti i diritti riservati.
@@ -18,7 +19,7 @@ import { Key } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 // ── API sleutel: Vercel env variabele heeft voorrang ──────────────────────
-const ENV_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_ANTHROPIC_KEY) || '';
+const ENV_KEY = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_GEMINI_KEY) || '';
 
 // ── Retry helper ──────────────────────────────────────────────────────────
 const sleep = (ms) => new Promise(res => setTimeout(res, ms));
@@ -84,7 +85,7 @@ const SPOKEN_Q = {
 };
 
 // ── Prompt italiano ───────────────────────────────────────────────────────
-const buildPrompt = (name, day, month, daysUntil) => {
+const buildPrompt = (name, day, month, daysUntil, age) => {
   const mese = ['gennaio','febbraio','marzo','aprile','maggio','giugno',
     'luglio','agosto','settembre','ottobre','novembre','dicembre'][month - 1];
   let timing = '';
@@ -92,11 +93,16 @@ const buildPrompt = (name, day, month, daysUntil) => {
   else if (daysUntil > 0 && daysUntil <= 7)  timing = `Tra ${daysUntil} giorno${daysUntil===1?'':'i'} e il compleanno.`;
   else if (daysUntil < 0 && daysUntil >= -7) timing = `Il compleanno era ${Math.abs(daysUntil)} giorno${Math.abs(daysUntil)===1?'':'i'} fa.`;
 
-  return `Sei lo Specchio Magico degli Auguri di una foresta incantata. Parla in modo caloroso, gioioso e adatto ai bambini. Usa solo l'italiano.
+  const etaNote = age ? `Eta: ${age} anni. ${age >= 80 ? 'E una nonna/nonno speciale — parla con grande calore e rispetto per la sua lunga vita.' : ''}` : '';
+  const musicaNote = age >= 80 ? 'Menziona anche un ricordo musicale degli anni 50 o 60 nella boodschap (es. Doris Day "Che Sera Sera" del 1956, o Domenico Modugno "Volare" del 1958).' : '';
 
-Bambino: ${name} | Compleanno: ${day} ${mese} | ${timing}
+  return `Sei lo Specchio Magico degli Auguri di una foresta incantata. Parla in modo caloroso, gioioso e rispettoso. Usa solo l'italiano.
 
-Dai un messaggio di auguri personale (max 3 frasi) e precisamente 2 o 3 curiosita storiche reali del ${day} ${mese} che piacciono ai bambini (artisti, animali, giocattoli, parchi divertimento, cartoni animati, invenzioni).
+Persona: ${name} | Compleanno: ${day} ${mese} | ${timing} ${etaNote}
+
+${musicaNote}
+
+Dai un messaggio di auguri personale (max 3 frasi) e precisamente 2 o 3 curiosita storiche reali del ${day} ${mese} che siano interessanti (per anziani: storia, musica, cinema, arte, moda degli anni 50-60 sono benvenuti).
 
 Rispondi SOLO come JSON senza markdown:
 {"it":"...","fatti":[{"anno":1984,"it":"..."}]}`;
@@ -269,6 +275,7 @@ const PARTICLES = Array.from({ length: 10 }, (_, i) => ({
 
 // ── Setup overlay (italiano) ───────────────────────────────────────────────
 function SetupOverlay({ step, name, setName, birthInput, setBirthInput,
+  birthYear, setBirthYear,
   onListen, isListening, listenTarget, onConfirm }) {
 
   const isName = step === STEP.NAME;
@@ -315,6 +322,25 @@ function SetupOverlay({ step, name, setName, birthInput, setBirthInput,
           width:'85%',
         }}
       />
+
+      {/* Anno di nascita (opzionale) — solo nel passo DATA */}
+      {!isName && (
+        <input
+          value={birthYear}
+          onChange={e => setBirthYear(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && onConfirm()}
+          placeholder="Anno di nascita (es. 1931)"
+          inputMode="numeric"
+          style={{
+            background:'rgba(245,230,66,0.05)',
+            border:'1px solid rgba(245,230,66,0.20)',
+            borderRadius:12, padding:'6px 12px',
+            color:'rgba(245,230,66,0.7)', fontSize:13, textAlign:'center',
+            outline:'none', fontFamily:"'IM Fell English', serif",
+            width:'85%',
+          }}
+        />
+      )}
 
       <div style={{ display:'flex', gap:8, alignItems:'center' }}>
         <button
@@ -428,11 +454,63 @@ function SpeechBubble({ message, onSpeak }) {
   );
 }
 
+// ── Pulsante playlist anni 50 ─────────────────────────────────────────────
+function MusicButton() {
+  const [clicked, setClicked] = useState(false);
+
+  const openPlaylist = () => {
+    setClicked(true);
+    // Apre YouTube con una ricerca di canzoni italiane anni 50
+    window.open(
+      'https://www.youtube.com/results?search_query=canzoni+italiane+anni+50+playlist+Doris+Day+Claudio+Villa+Modugno',
+      '_blank'
+    );
+    setTimeout(() => setClicked(false), 2000);
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity:0, y:8 }}
+      animate={{ opacity:1, y:0 }}
+      transition={{ delay:2.2 }}
+      style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:6,
+        position:'relative', zIndex:5, marginTop:6 }}
+    >
+      <button onClick={openPlaylist} style={{
+        padding:'10px 22px',
+        background: clicked
+          ? 'linear-gradient(135deg,#1a6b1a,#2ecc2e)'
+          : 'linear-gradient(135deg,#7b0d0d,#c0392b,#e74c3c)',
+        border:'none', borderRadius:28,
+        color:'#fff', fontWeight:700, fontSize:13,
+        cursor:'pointer', fontFamily:"'IM Fell English', serif",
+        letterSpacing:'0.06em',
+        boxShadow: clicked
+          ? '0 4px 18px rgba(46,204,46,0.5)'
+          : '0 4px 18px rgba(192,57,43,0.55),0 0 28px rgba(231,76,60,0.18)',
+        transition:'all 0.4s ease',
+        display:'flex', alignItems:'center', gap:8,
+      }}>
+        <span style={{ fontSize:18 }}>{clicked ? '✅' : '🎵'}</span>
+        {clicked ? 'Buon ascolto, nonna!' : 'Ascolta le canzoni della tua giovinezza'}
+      </button>
+      <p style={{
+        margin:0, fontSize:9, color:'rgba(245,230,66,0.28)',
+        fontStyle:'italic', textAlign:'center', maxWidth:280,
+      }}>
+        Che Sarà Sarà · Volare · Azzurro · Nel Blu Dipinto di Blu
+      </p>
+    </motion.div>
+  );
+}
+
 // ── Componente principale ─────────────────────────────────────────────────
 export default function SpecchioAuguri() {
   const [step, setStep]               = useState(STEP.NAME);
   const [name, setName]               = useState('');
   const [birthInput, setBirthInput]   = useState('');
+  const [birthYear, setBirthYear]     = useState('');
+  const [age, setAge]                 = useState(null);
   const [message, setMessage]         = useState(null);
   const [status, setStatus]           = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -443,7 +521,7 @@ export default function SpecchioAuguri() {
   const [showKeyModal, setShowKeyModal] = useState(false);
   const [apiKey, setApiKey] = useState(() => {
     if (ENV_KEY) return ENV_KEY;
-    try { return localStorage.getItem('specchio_auguri_key') || ''; } catch { return ''; }
+    try { return localStorage.getItem('specchio_auguri_gemini_key') || ''; } catch { return ''; }
   });
 
   const videoRef = useRef(null);
@@ -535,9 +613,19 @@ export default function SpecchioAuguri() {
     const days = computeDaysUntil(parsed.day, parsed.month);
     parsedDateRef.current = { ...parsed, days };
     setDaysInfo(days);
+
+    // Calcola eta dall'anno di nascita se fornito
+    let computedAge = null;
+    const yearNum = parseInt(birthYear, 10);
+    if (yearNum >= 1900 && yearNum <= new Date().getFullYear()) {
+      computedAge = new Date().getFullYear() - yearNum;
+      if (days > 0) computedAge -= 1; // non ancora compiuto quest'anno
+      setAge(computedAge);
+    }
+
     setStatus('');
     setStep(STEP.DONE);
-    fetchMessage(name, parsed.day, parsed.month, days);
+    fetchMessage(name, parsed.day, parsed.month, days, computedAge);
   };
 
   const startListening = (target) => {
@@ -613,8 +701,8 @@ export default function SpecchioAuguri() {
     };
   };
 
-  // ── API Claude ───────────────────────────────────────────────────────────
-  const fetchMessage = async (n, day, month, days) => {
+  // ── API Gemini ───────────────────────────────────────────────────────────
+  const fetchMessage = async (n, day, month, days, computedAge = null) => {
     if (!apiKey) { setStatus('Nessuna chiave API impostata 🔑'); return; }
     setIsThinking(true);
     setMessage(null);
@@ -622,20 +710,22 @@ export default function SpecchioAuguri() {
 
     try {
       const resp = await fetchWithRetry(() =>
-        fetch('https://api.anthropic.com/v1/messages', {
-          method:'POST',
-          headers:{ 'Content-Type':'application/json' },
-          body: JSON.stringify({
-            model:'claude-sonnet-4-20250514',
-            max_tokens:1000,
-            messages:[{ role:'user', content:buildPrompt(n, day, month, days) }],
-          }),
-        }).then(r => r.json())
+        fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          {
+            method:'POST',
+            headers:{ 'Content-Type':'application/json' },
+            body: JSON.stringify({
+              contents:[{ parts:[{ text: buildPrompt(n, day, month, days, computedAge) }] }],
+              generationConfig:{ temperature:0.9, maxOutputTokens:1000 },
+            }),
+          }
+        ).then(r => r.json())
       );
 
       if (resp.error) throw new Error(resp.error.message || 'Errore API');
 
-      const raw = resp.content?.[0]?.text || '{}';
+      const raw = resp.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
       const data = JSON.parse(raw.replace(/```json|```/g,'').trim());
       setMessage(data);
       setStatus('');
@@ -656,15 +746,15 @@ export default function SpecchioAuguri() {
 
   const handleReset = () => {
     window.speechSynthesis.cancel();
-    setStep(STEP.NAME); setName(''); setBirthInput('');
-    setMessage(null); setDaysInfo(null);
+    setStep(STEP.NAME); setName(''); setBirthInput(''); setBirthYear('');
+    setMessage(null); setDaysInfo(null); setAge(null);
     setStatus(''); setIsSpeaking(false);
     parsedDateRef.current = null;
   };
 
   const saveKey = (k) => {
     setApiKey(k);
-    try { localStorage.setItem('specchio_auguri_key', k); } catch {}
+    try { localStorage.setItem('specchio_auguri_gemini_key', k); } catch {}
     setShowKeyModal(false);
   };
 
@@ -764,6 +854,7 @@ export default function SpecchioAuguri() {
                 step={step}
                 name={name} setName={setName}
                 birthInput={birthInput} setBirthInput={setBirthInput}
+                birthYear={birthYear} setBirthYear={setBirthYear}
                 onListen={startListening}
                 isListening={isListening} listenTarget={listenTarget}
                 onConfirm={step===STEP.NAME ? confirmName : confirmDate}
@@ -831,6 +922,11 @@ export default function SpecchioAuguri() {
         </motion.div>
       )}
 
+      {/* Pulsante musica anni 50 — per nonne e nonni */}
+      {isDone && !isThinking && message && (age === null || age >= 60) && (
+        <MusicButton />
+      )}
+
       {/* Pulsante chiave API */}
       {!ENV_KEY && (
         <button onClick={() => setShowKeyModal(true)} style={S.btnKey}>
@@ -849,11 +945,11 @@ export default function SpecchioAuguri() {
             <div style={S.modalBox}>
               <h2 style={S.modalTitle}>🔑 Chiave API</h2>
               <p style={S.modalHint}>
-                Inserisci la chiave API Anthropic.<br/>
+                Inserisci la chiave API Gemini (Google AI Studio).<br/>
                 Viene salvata solo su questo dispositivo.
               </p>
               <input type="password" id="keyInp" defaultValue={apiKey}
-                placeholder="sk-ant-..." style={S.modalInput}/>
+                placeholder="AIza..." style={S.modalInput}/>
               <div style={{ display:'flex', gap:10, marginTop:16 }}>
                 <button onClick={() => setShowKeyModal(false)} style={S.modalCancel}>Annulla</button>
                 <button onClick={() => saveKey(document.getElementById('keyInp').value)}
@@ -1053,4 +1149,3 @@ const S = {
     letterSpacing:'0.05em',
   },
 };
-
